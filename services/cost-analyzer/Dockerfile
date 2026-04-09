@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ ./src/
+RUN adduser --disabled-password --gecos "" auditor
+USER auditor
+CMD ["python", "-m", "src.main"]
