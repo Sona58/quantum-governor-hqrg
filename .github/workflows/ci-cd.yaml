@@ -1,0 +1,68 @@
+name: HQRG Production Pipeline
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  # PHASE 1: Quality Control
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python Unit Tests
+        run: |
+          pip install pytest
+          pytest tests/unit
+
+  # PHASE 2: Artifact Creation
+  build-images:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Push Docker Images
+        run: |
+          # In a real scenario, you'd login to DockerHub/GHCR here
+          docker build -t gateway-api:${{ github.sha }} ./services/gateway-api
+          docker build -t risk-engine-qml:${{ github.sha }} ./services/risk-engine-qml
+          docker build -t cost-analyzer:${{ github.sha }} ./services/cost-analyzer
+
+  # PHASE 3: Infrastructure & Deployment
+  deploy:
+    needs: build-images
+    runs-on: ubuntu-latest
+    env:
+      TF_VAR_ibm_quantum_token: ${{ secrets.IBM_QUANTUM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+  # PHASE 4: Verification (The "Smoke Test")
+  verify-deployment:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Integration & E2E Tests
+        run: |
+          # This would target your staging/prod cluster URL
+          pip install pytest requests redis nats-py
+          pytest tests/integration tests/e2e
+          
+  # PHASE 5: Verification of Observability Stack
+  verify-observability:
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Prometheus Health
+        run: |
+          kubectl get pods -l app=prometheus -n hqrg-core
+          # Ensure metrics endpoint is reachable
+          curl -f http://prometheus-service:9090/-/healthy

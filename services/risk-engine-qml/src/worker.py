@@ -3,6 +3,7 @@ import json
 import time
 import nats
 import numpy as np
+from prometheus_client import start_http_server
 from .models.qnn_risk import QuantumRiskScorer
 from .utils.data_preprocessor import normalize_features
 from .utils.circuit_logger import log_circuit_complexity
@@ -64,6 +65,10 @@ if __name__ == "__main__":
     import os
     NATS_URL = os.getenv("NATS_URL", "nats://nats-service:4222")
     ENGINE_TYPE = os.getenv("ENGINE_TYPE", "qiskit-aer-sim") # e.g., 'ibm-qpu' for enterprise pods
+    
+    # Start Prometheus metrics server on port 8000
+    # This allows the Prometheus pod to scrape this worker
+    start_http_server(8000)
     
     worker = RiskWorker(NATS_URL, ["quantum.simulator.*"], ENGINE_TYPE)
     asyncio.run(worker.run())

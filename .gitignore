@@ -1,1 +1,4 @@
 .spyproject/
+.env
+terraform.tfstate
+__pycache__
