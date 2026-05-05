@@ -1,6 +1,6 @@
 # HQRG: Hybrid Quantum Resource Governor
 
-![Full Lifecycle Pipeline](https://github.com/Sona58/quantum-governor-hqrg/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/Sona58/quantum-governor-hqrg/actions)
+[![Full Lifecycle Pipeline](https://github.com/Sona58/quantum-governor-hqrg/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/Sona58/quantum-governor-hqrg/actions)
 ![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-blue)
 ![Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4)
 ![Qiskit](https://img.shields.io/badge/Quantum-Qiskit-6929C4)
