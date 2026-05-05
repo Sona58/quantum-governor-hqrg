@@ -2,17 +2,17 @@ provider "kubernetes" {
   config_path = "~/.kube/config"
 }
 
-resource "kubernetes_namespace" "hqrg" {
+resource "kubernetes_namespace_v1" "hqrg" {
   metadata {
     name = "hqrg-core"
   }
 }
 
 # This replaces k8s/base/global-config.yaml
-resource "kubernetes_config_map" "global_config" {
+resource "kubernetes_config_map_v1" "global_config" {
   metadata {
     name      = "hqrg-global-config"
-    namespace = kubernetes_namespace.hqrg.metadata[0].name
+    namespace = kubernetes_namespace_v1.hqrg.metadata[0].name
   }
 
   data = {
@@ -23,10 +23,10 @@ resource "kubernetes_config_map" "global_config" {
 }
 
 # This replaces our dynamic secret logic in bash
-resource "kubernetes_secret" "quantum_creds" {
+resource "kubernetes_secret_v1" "quantum_creds" {
   metadata {
     name      = "quantum-credentials"
-    namespace = kubernetes_namespace.hqrg.metadata[0].name
+    namespace = kubernetes_namespace_v1.hqrg.metadata[0].name
   }
 
   data = {
@@ -36,10 +36,10 @@ resource "kubernetes_secret" "quantum_creds" {
   type = "Opaque"
 }
 
-resource "kubernetes_resource_quota" "hqrg_quota" {
+resource "kubernetes_resource_quota_v1" "hqrg_quota" {
   metadata {
     name      = "hqrg-compute-quota"
-    namespace = kubernetes_namespace.hqrg.metadata[0].name
+    namespace = kubernetes_namespace_v1.hqrg.metadata[0].name
   }
   spec {
     hard = {

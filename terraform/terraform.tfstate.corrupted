@@ -1,0 +1,14 @@
+{
+  "version": 4,
+  "terraform_version": "1.7.0",
+  "serial": 3,
+  "lineage": "78d974b7-7cd9-79f8-f583-b4a2a589767f",
+  "outputs": {
+    "gateway_url": {
+      "value": "http://gateway-api-service.hqrg-core.svc.cluster.local",
+      "type": "string"
+    }
+  },
+  "resources": [],
+  "check_results": null
+}

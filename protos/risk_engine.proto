@@ -1,0 +1,17 @@
+syntax = "proto3";
+package riskengine;
+
+service RiskAnalysis {
+  rpc AnalyzeRisk(RiskRequest) returns (RiskResponse) {}
+}
+
+message RiskRequest {
+  string circuit_data = 1;
+  int32 qubits = 2;
+  int32 depth = 3;
+}
+
+message RiskResponse {
+  float risk_score = 1;
+  string provider_used = 2;
+}

@@ -1,7 +1,8 @@
-resource "kubernetes_deployment" "cost_analyzer" {
+# 2. Cost Analyzer Deployment
+resource "kubernetes_deployment_v1" "cost_analyzer" {
   metadata {
     name      = "cost-analyzer"
-    namespace = kubernetes_namespace.hqrg.metadata[0].name
+    namespace = kubernetes_namespace_v1.hqrg.metadata[0].name
   }
 
   spec {
@@ -17,14 +18,13 @@ resource "kubernetes_deployment" "cost_analyzer" {
 
       spec {
         container {
-          name  = "cost-analyzer"
-          image = "cost-analyzer:latest"
+          name              = "cost-analyzer"
+          image             = "cost-analyzer:latest"
           image_pull_policy = "Never"
 
-          # Shared logic from main.tf
           env_from {
             config_map_ref {
-              name = kubernetes_config_map.global_config.metadata[0].name
+              name = kubernetes_config_map_v1.global_config.metadata[0].name
             }
           }
 
@@ -35,7 +35,7 @@ resource "kubernetes_deployment" "cost_analyzer" {
             }
             requests = {
               cpu    = "100m"
-              memory = "64Mi"
+              memory = "64Mi" 
             }
           }
         }

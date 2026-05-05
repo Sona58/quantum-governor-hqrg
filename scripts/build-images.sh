@@ -9,8 +9,14 @@ fi
 
 echo "📦 [BUILD] Building Microservices..."
 
-docker build -t gateway-api:latest ./services/gateway-api
-docker build -t risk-engine-qml:latest ./services/risk-engine-qml
-docker build -t cost-analyzer:latest ./services/cost-analyzer
+echo "Building Gateway API"
+# 1. Generate stubs in the Risk Engine (if not already done)
+# 2. Copy those stubs to the Gateway API source folder
+cp services/risk-engine-qml/src/risk_engine_pb2* services/gateway-api/src/
+docker build --no-cache -t gateway-api:latest ./services/gateway-api
+echo "Building Risk Engine (QML)"
+docker build --no-cache -t risk-engine-qml:latest ./services/risk-engine-qml
+echo "Building Cost Analyzer"
+docker build --no-cache -t cost-analyzer:latest ./services/cost-analyzer
 
 echo "✅ [BUILD] All images built successfully."

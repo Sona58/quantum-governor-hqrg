@@ -1,38 +1,46 @@
 # HQRG: Hybrid Quantum Resource Governor
 
-[![Full Lifecycle Pipeline](https://github.com/Sona58/quantum-governor-hqrg/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/your-username/hqrg/actions)
+![Full Lifecycle Pipeline](https://github.com/Sona58/quantum-governor-hqrg/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/your-username/hqrg/actions)
 ![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-blue)
 ![Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4)
 ![Qiskit](https://img.shields.io/badge/Quantum-Qiskit-6929C4)
+![Grafana](https://img.shields.io/badge/Observability-Grafana-F46800)
 
-**HQRG** is an enterprise-grade microservices architecture designed to orchestrate and govern hybrid quantum-classical workloads. It dynamically routes financial risk analysis requests between local classical simulators and real IBM Quantum (QPU) hardware based on loan value, user tier, and cost-efficiency constraints.
+**HQRG** is an enterprise-grade microservices architecture designed to orchestrate and govern hybrid quantum-classical workloads. It dynamically routes financial risk analysis requests between local classical simulators, high perfromance computing (SLURM) and real IBM Quantum (QPU) hardware based on workload complexity and cost-efficiency constraints.
 
 ## 🏗️ Architecture Overview
 
-The system is built on a "Saga-inspired" event-driven architecture using **NATS JetStream** for reliable messaging and **Terraform** for infrastructure lifecycle management.
+The system utilizes and event-based "Saga" pattern managed via **NATS JetStream** and automated via **Terraform**.
 
-* **Gateway API:** FastAPI-based entry point that implements the Governance Layer.
-* **Risk Engine (QML):** Quantum Neural Network (QNN) using Qiskit 2.x to perform loan risk assessments.
-* **Cost Analyzer:** Observability service that tracks QPU "Credit" usage and updates a Redis audit log.
-* **Infrastructure:** Automated deployment of NATS, Redis, and Python workloads via Terraform.
+* **Governance Gateway (FastAPI):** Implements an `HPC-ROUTER` logic. It automatically offloads complex quantum circuits (multi-feature payloads) to **SLURM** while keeping simpler risk assessments in the local **Risk Engine**.
+* **Risk Engine (QML):** A Quantum Machine Learning service using **Qiskit Aer** and **IBM Runtime** to perform loan risk assessments via Quantum Network Networks (QNN).
+* **Quantum Observability Stack:** Full-spectrum monitoring using **Prometheus** and **Grafana**, tracking QPU Latency (95th percentile), NATS message throughput, and circuit execution totals.
+* **Persistence Layer:** **Redis** for real-time audit logs and **NATS Jetstream** for guaranteed message delivery of quantum jobs.
 
+## 📊 Observability & Metrics
 
+The system exposes a custom Grafana dashboard for real-time quantum governance:
+*   **Active Risk Jobs:** Real-time counter of circuit executions.
+*   **QPU Latency:** Histogram analysis of quantum inference duration.
+*   **NATS Throughput:** Message velocity across the `QUANTUM` stream.
+*   **Resource Health:** Memory tracking for memory-intensive Qiskit simulations.
+
+[!Grafana-Dashboard](images/grafana-dashboard.png)
 
 ## 🛠️ Tech Stack
 
-* **Quantum:** Qiskit (Aer Simulator & IBM Runtime)
-* **Orchestration:** Kubernetes (Minikube/Cloud), Terraform
-* **Messaging:** NATS JetStream (Event-driven)
-* **Data:** Redis (Real-time Audit Logs)
-* **DevOps:** GitHub Actions, Docker, PyTest (Unit, Integration, E2E)
+*   **Quantum:** Qiskit 2.x (Aer & IBM Runtime)
+*   **Orchestration:** Kubernetes (Minikube), Terraform
+*   **Messaging:** NATS JetStream (Persistent Streams)
+*   **Observability:** Prometheus & Grafana
+*   **DevOps:** GitHub Actions (Local Minikube Runner), Docker
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-* Docker & Kubernetes (Minikube recommended)
-* Terraform 1.5+
-* NATS CLI
-* IBM Quantum API Token (for Enterprise tier)
+*   Docker & Kubernetes (Minikube)
+*   Terraform 1.5+
+*   NATS CLI (`nats-box`)
 
 ### Quick Start
 1. **Clone the repo:**
@@ -53,16 +61,27 @@ The system is built on a "Saga-inspired" event-driven architecture using **NATS 
    chmod +x scripts/manage.sh
    ./scripts/manage.sh init
    ```
+   
+4. **Bootstrap the Quantum Stream:**
+    Since NATS JetStream requires explicit stream creation, use the provided helper:
+    ```bash
+    kubectl run nats-bootstrap -it --rm --image=natsio/nats-box -n hqrg-core -- nats str add QUANTUM --server=nats-service:4222 --subjects "quantum.*" --defaults
+    ```
+    
+5. 3.  **Access the Dashboard:**
+    ```bash
+    kubectl port-forward service/grafana-service 3000:3000 -n hqrg-core
+    ```
   
 ---
 
-## 🧪 Testing Strategy
+## 🧪 Testing & CI/CD
 
-The project maintains a 3-tier testing pyramid to ensure reliability across hybrid environments:
+The pipeline uses a **Local-in-Cloud** strategy to keep costs at zero while maintaining high fidelity:
 
-* **Unit Tests:** Logic-only testing of loan tiering and cost multipliers using Mocks.
-* **Integration Tests:** Validates NATS JetStream persistence and Redis connectivity.
-* **E2E Tests:** Simulates a full "Loan Request to Audit Log" lifecycle in a GitHub Actions runner using Service Containers.
+*   **CI Environment:** GitHub Actions spins up a dedicated **Minikube** instance inside the runner.
+*   **Artifacts:** Images are built directly into the Minikube Docker daemon (`eval $(minikube docker-env)`).
+*   **Integration Tests:** Validates the full circuit from Gateway -> NATS -> Risk Engine -> Redis.
 
 Run tests locally:
 ```bash
@@ -71,19 +90,8 @@ pytest tests/
 
 ---
 
-## 🔐 Governance & Security
+## 🔐 Governance Rules
 
-* **Dynamic Secrets:** IBM API tokens are never stored in YAML. They are injected into the cluster at runtime via Terraform and Kubernetes Secrets.
-* **Resource Quotas:** Hard limits are enforced at the K8s Namespace level to prevent Qiskit simulators from consuming excessive cluster resources.
-* **Cost Auditing:** Every QPU execution is tracked and logged in Redis to provide real-time visibility into quantum spend.
-
----
-
-## 📈 CI/CD Pipeline
-
-The included GitHub Action automates the following on every push:
-
-* **Lints and Unit Tests** Python code.
-* **Builds Docker Images** for all microservices.
-* **Spins up NATS/Redis sidecars** to run Integration and E2E tests.
-* **Terraform Plan** validates infrastructure changes.
+* **HPC Offloading:** Requests exceeding the feature threshold are automatically routed to SLURM to prevent local resource exhaustion.
+* **Resource Quotas:** `hqrg-compute-quota` enforces strict limits on Python pods to prevent runaway Qiskit simulations.
+* **Secret Management:** IBM Quantum tokens are injected as Kubernetes Secrets via Terraform and are never logged or stored in plaintext.

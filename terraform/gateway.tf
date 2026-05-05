@@ -1,7 +1,7 @@
-resource "kubernetes_deployment" "gateway_api" {
+resource "kubernetes_deployment_v1" "gateway_api" {
   metadata {
     name      = "gateway-api"
-    namespace = kubernetes_namespace.hqrg.metadata[0].name
+    namespace = kubernetes_namespace_v1.hqrg.metadata[0].name
   }
 
   spec {
@@ -13,6 +13,11 @@ resource "kubernetes_deployment" "gateway_api" {
     template {
       metadata {
         labels = { app = "gateway-api" }
+        annotations = {
+          "prometheus.io/scrape" = "true"
+          "prometheus.io/port"   = "8000"
+          "prometheus.io/path"   = "/metrics/"
+        }
       }
 
       spec {
@@ -20,10 +25,21 @@ resource "kubernetes_deployment" "gateway_api" {
           name  = "gateway-api"
           image = "gateway-api:latest"
           image_pull_policy = "Never"
+          
+          resources {
+              limits = {
+                cpu    = "500m"
+                memory = "512Mi"
+              }
+              requests = {
+                cpu    = "250m"
+                memory = "256Mi"
+              }
+          }
 
           env_from {
             config_map_ref {
-              name = kubernetes_config_map.global_config.metadata[0].name
+              name = kubernetes_config_map_v1.global_config.metadata[0].name
             }
           }
 
@@ -45,10 +61,10 @@ resource "kubernetes_deployment" "gateway_api" {
   }
 }
 
-resource "kubernetes_service" "gateway_service" {
+resource "kubernetes_service_v1" "gateway_service" {
   metadata {
     name      = "gateway-api-service"
-    namespace = kubernetes_namespace.hqrg.metadata[0].name
+    namespace = kubernetes_namespace_v1.hqrg.metadata[0].name
   }
   spec {
     selector = { app = "gateway-api" }

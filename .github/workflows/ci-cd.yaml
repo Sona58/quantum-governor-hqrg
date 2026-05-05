@@ -3,6 +3,8 @@ name: HQRG Production Pipeline
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   # PHASE 1: Quality Control
@@ -10,9 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+            python-version: '3.10'
+      - name: Install Dependencies
+        run: |
+            python -m pip install --upgrade pip
+            # Install requirements for all services to run unit tests
+            pip install pytest fastapi uvicorn prometheus-client qiskit qiskit-aer nats-py redis
       - name: Python Unit Tests
         run: |
-          pip install pytest
           pytest tests/unit
 
   # PHASE 2: Artifact Creation
@@ -21,48 +31,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build & Push Docker Images
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          container-runtime: docker
+          cpus: 2
+          memory: 4000m
+      - name: Build Local Images in Minikube
         run: |
-          # In a real scenario, you'd login to DockerHub/GHCR here
-          docker build -t gateway-api:${{ github.sha }} ./services/gateway-api
-          docker build -t risk-engine-qml:${{ github.sha }} ./services/risk-engine-qml
-          docker build -t cost-analyzer:${{ github.sha }} ./services/cost-analyzer
-
-  # PHASE 3: Infrastructure & Deployment
-  deploy:
-    needs: build-images
-    runs-on: ubuntu-latest
-    env:
-      TF_VAR_ibm_quantum_token: ${{ secrets.IBM_QUANTUM_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
+          # Point the shell to Minikube's Docker daemon
+          eval $(minikube -p minikube docker-env)
+          docker build -t gateway-api:latest ./services/gateway-api
+          docker build -t risk-engine-qml:latest ./services/risk-engine-qml
+          docker build -t cost-analyzer:latest ./services/cost-analyzer
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-      - name: Terraform Apply
+
+      - name: Deploy to Minikube
         working-directory: ./terraform
         run: |
           terraform init
           terraform apply -auto-approve
 
-  # PHASE 4: Verification (The "Smoke Test")
-  verify-deployment:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Integration & E2E Tests
+      - name: Verify NATS & Stream
         run: |
-          # This would target your staging/prod cluster URL
-          pip install pytest requests redis nats-py
+          # We still need to create that stream since it's a fresh Minikube
+          kubectl wait --for=condition=ready pod -l app=nats -n hqrg-core --timeout=90s
+          kubectl exec -n hqrg-core deployment/nats-deployment -c nats -- nats str add QUANTUM --server=localhost:4222 --subjects "quantum.*" --storage file --retention limits --max-msgs=-1 --max-bytes=-1 --discard old --defaults || true
+
+      - name: Run Integration Tests
+        run: |
+          pip install pytest requests
+          # We use port-forward to hit the gateway inside the runner
+          kubectl port-forward service/gateway-api-service 8080:80 -n hqrg-core &
+          sleep 5
           pytest tests/integration tests/e2e
-          
-  # PHASE 5: Verification of Observability Stack
-  verify-observability:
-    needs: deploy-prod
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Prometheus Health
-        run: |
-          kubectl get pods -l app=prometheus -n hqrg-core
-          # Ensure metrics endpoint is reachable
-          curl -f http://prometheus-service:9090/-/healthy

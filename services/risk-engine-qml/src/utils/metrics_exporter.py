@@ -1,5 +1,5 @@
 # services/risk-engine-qml/src/utils/metrics_exporter.py
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Histogram, Gauge, start_http_server
 
 # Track how many jobs are processed by engine type (Simulator vs QPU)
 JOBS_PROCESSED = Counter(
@@ -21,3 +21,20 @@ CIRCUIT_DEPTH = Gauge(
     'Current depth of the generated QNN circuit',
     ['engine_type']
 )
+
+CIRCUIT_EXECUTIONS = Counter(
+    'risk_engine_circuit_executions_total',
+    'Number of quantum circuits executed via gRPC or NATS',
+    ['subject', 'engine']
+)
+
+INFERENCE_LATENCY = Histogram(
+    'risk_engine_inference_duration_seconds',
+    'Latency of the QNN inference process',
+    ['engine']
+)
+
+# 3. Helper function to start the metrics server
+def start_metrics_server(port=8000):
+    print(f"📈 Metrics server exported on port {port}")
+    start_http_server(port)
