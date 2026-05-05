@@ -1,6 +1,6 @@
 # HQRG: Hybrid Quantum Resource Governor
 
-![Full Lifecycle Pipeline](https://github.com/Sona58/quantum-governor-hqrg/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/your-username/hqrg/actions)
+![Full Lifecycle Pipeline](https://github.com/Sona58/quantum-governor-hqrg/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/Sona58/hqrg/actions)
 ![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-blue)
 ![Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4)
 ![Qiskit](https://img.shields.io/badge/Quantum-Qiskit-6929C4)
@@ -25,7 +25,7 @@ The system exposes a custom Grafana dashboard for real-time quantum governance:
 *   **NATS Throughput:** Message velocity across the `QUANTUM` stream.
 *   **Resource Health:** Memory tracking for memory-intensive Qiskit simulations.
 
-[!Grafana-Dashboard](images/grafana-dashboard.png)
+[!Grafana-Dashboard](./images/grafana-dashboard.png)
 
 ## 🛠️ Tech Stack
 
