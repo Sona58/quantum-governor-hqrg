@@ -22,6 +22,8 @@ jobs:
             # Install requirements for all services to run unit tests
             pip install pytest fastapi uvicorn prometheus-client qiskit qiskit-aer nats-py redis
       - name: Python Unit Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/unit
 
