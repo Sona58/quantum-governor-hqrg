@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import importlib
+
+cost_analyzer = importlib.import_module("services.cost-analyzer")
 from cost_analyzer.src.accounting import calculate_cost
 
 def test_cost_multiplier_logic():
