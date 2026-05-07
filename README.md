@@ -65,7 +65,7 @@ The system exposes a custom Grafana dashboard for real-time quantum governance:
 4. **Bootstrap the Quantum Stream:**
     Since NATS JetStream requires explicit stream creation, use the provided helper:
     ```bash
-    kubectl run nats-bootstrap -it --rm --image=natsio/nats-box -n hqrg-core -- nats str add QUANTUM --server=nats-service:4222 --subjects "quantum.*" --defaults
+    kubectl run nats-bootstrap -it --rm --image=natsio/nats-box -n hqrg-core  --overrides='{"spec":{"containers":[{"name":"nats-verify","image":"natsio/nats-box","resources":{"limits":{"cpu":"100m","memory":"128Mi"}}}]}}' -- nats str add QUANTUM --server=nats-service:4222 --subjects "quantum.*" --defaults
     ```
     
 5. 3.  **Access the Dashboard:**
