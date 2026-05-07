@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from services.cost_analyzer.src.accounting import calculate_cost
+from ../services.cost_analyzer.src.accounting import calculate_cost
 
 def test_cost_multiplier_logic():
     # Simulators should be cheap (e.g., 1.0 multiplier)
