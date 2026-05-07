@@ -23,10 +23,10 @@ def test_full_system_flow():
     response = requests.post(f"{gateway_url}/analyze-risk", json=payload)
     
     # Debug print if validation fails
-    if response.status_code == 422:
+    if response.status_code != 200:
         print(f"❌ Detail: {response.json()}")
     
-    assert response.status_code == 202
+    assert response.status_code == 200
 
     data = response.json()
     # main.py returns "request_id", not "job_id"
