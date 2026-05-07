@@ -22,15 +22,25 @@ def test_full_system_flow():
     }
     response = requests.post(f"{gateway_url}/analyze-risk", json=payload)
     
+    # Debug print if validation fails
+    if response.status_code == 422:
+        print(f"❌ Detail: {response.json()}")
+    
     assert response.status_code == 202
-    job_id = response.json()["job_id"]
 
-    # 2. Wait for async processing
+    data = response.json()
+    # main.py returns "request_id", not "job_id"
+    request_id = data["request_id"] 
+    print(f"✅ Request accepted via route: {data['assigned_route']}")
+
+    # 2. Wait for processing
     time.sleep(10) 
 
     # 3. Verify Redis
+    # Note: Ensure your Risk Engine or Cost Analyzer actually writes to Redis 
+    # using the 'request_id' as the key.
     r = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
-    audit_log = r.get(f"audit:{job_id}")
+    audit_log = r.get(f"audit:{request_id}")
     
+    # If the gRPC path is synchronous, the audit log should exist immediately.
     assert audit_log is not None
-    print(f"✅ Full flow verified for Job {job_id}")
