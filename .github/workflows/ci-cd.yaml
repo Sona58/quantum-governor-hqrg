@@ -61,7 +61,7 @@ jobs:
         run: |
           kubectl wait --for=condition=ready pod -l app=nats -n hqrg-core --timeout=90s
           # Use nats-box to create the stream from outside the nats pod
-          kubectl run nats-bootstrap --rm -i --restart=Never --image=natsio/nats-box -n hqrg-core -- \
+          kubectl run nats-bootstrap --rm -i --restart=Never --image=natsio/nats-box -n hqrg-core --overrides='{"spec":{"containers":[{"name":"nats-verify","image":"natsio/nats-box","resources":{"limits":{"cpu":"100m","memory":"128Mi"}}}]}}' -- \
           nats --server=nats-service:4222 str add QUANTUM --subjects "quantum.*" --storage file --retention limits --max-msgs=-1 --max-bytes=-1 --discard old --defaults
 
       - name: Run Integration Tests
