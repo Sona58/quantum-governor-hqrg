@@ -55,7 +55,7 @@ jobs:
             TF_VAR_ibm_quantum_token: ${{ vars.IBM_QUANTUM_TOKEN }}
         run: |
           terraform init
-          terraform apply -auto-approve -var="IBM_QUANTUM_TOKEN=${IBM_QUANTUM_TOKEN}"
+          terraform apply -auto-approve
 
       - name: Verify NATS & Stream
         run: |
