@@ -57,19 +57,29 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      - name: Verify NATS & Stream
+      - name: Verify and Bootstrap NATS Stream
         run: |
-          # We still need to create that stream since it's a fresh Minikube
           kubectl wait --for=condition=ready pod -l app=nats -n hqrg-core --timeout=90s
-          kubectl exec -n hqrg-core deployment/nats-deployment -c nats -- nats str add QUANTUM --server=localhost:4222 --subjects "quantum.*" --storage file --retention limits --max-msgs=-1 --max-bytes=-1 --discard old --defaults || true
+          # Use nats-box to create the stream from outside the nats pod
+          kubectl run nats-bootstrap --rm -i --restart=Never --image=natsio/nats-box -n hqrg-core -- \
+          nats --server=nats-service:4222 str add QUANTUM --subjects "quantum.*" --storage file --retention limits --max-msgs=-1 --max-bytes=-1 --discard old --defaults
 
       - name: Run Integration Tests
         env:
             GATEWAY_URL: http://localhost:8080
             REDIS_HOST: localhost
+            NATS_URL: nats://localhost:4222
         run: |
-          pip install pytest requests fastapi uvicorn prometheus-client qiskit qiskit-aer nats-py redis
-          # We use port-forward to hit the gateway inside the runner
+          # 1. Install specific test plugins
+          pip install pytest pytest-asyncio requests redis nats-py
+          
+          # 2. Forward ALL necessary services to localhost
           kubectl port-forward service/gateway-api-service 8080:80 -n hqrg-core &
-          sleep 5
-          pytest tests/integration tests/e2e
+          kubectl port-forward service/redis-service 6379:6379 -n hqrg-core &
+          kubectl port-forward service/nats-service 4222:4222 -n hqrg-core &
+          
+          # Give forwards a moment to establish
+          sleep 10
+          
+          # 3. Run with python -m to fix pathing and include asyncio plugin
+          python -m pytest tests/integration tests/e2e
