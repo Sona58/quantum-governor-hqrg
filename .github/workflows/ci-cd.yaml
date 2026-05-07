@@ -53,7 +53,7 @@ jobs:
         working-directory: ./terraform
         run: |
           terraform init
-          terraform apply -auto-approve
+          terraform apply -auto-approve -var="IBM_QUANTUM_TOKEN=${IBM_QUANTUM_TOKEN}"
 
       - name: Verify NATS & Stream
         run: |
