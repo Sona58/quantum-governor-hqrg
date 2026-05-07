@@ -72,6 +72,24 @@ async def analyze_risk(request: RiskAnalysisRequest):
                     qubits = qubit_count,
                     depth = 10
                 ))
+                
+                # 2. Publish event to NATS for Cost Analyzer
+                # We include the risk_score so the Cost Analyzer can log it to Redis
+                audit_event = {
+                    "request_id": request_id,
+                    "risk_score": float(response.risk_score),
+                    "metrics": {
+                        "engine": response.provider_used,
+                        "latency": 0.05  # You could measure actual time here
+                    }
+                }
+                
+                # This triggers the Cost Analyzer to write to Redis
+                await app.state.nc.publish(
+                    f"results.{request_id}", 
+                    json.dumps(audit_event).encode()
+                )
+                
                 return {
                     "request_id": request_id,
                     "status": f"Success (Score: {response.risk_score})",

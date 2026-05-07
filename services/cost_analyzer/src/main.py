@@ -25,6 +25,7 @@ class CostAnalyzer:
             request_id = data.get("request_id")
             engine = data.get("metrics", {}).get("engine")
             latency = data.get("metrics", {}).get("latency", 0)
+            risk_score = data.get("risk_score")
 
             # 1. Calculate the cost
             cost = self.accountant.calculate_cost(engine, latency)
@@ -36,6 +37,18 @@ class CostAnalyzer:
             
             # Update a global 'total_spend' counter for our Grafana dashboard
             self.redis_client.incrbyfloat("stats:total_quantum_spend", cost)
+            
+            # PREPARE CONSOLIDATED LOG
+            audit_entry = {
+                "request_id": request_id,
+                "risk_score": risk_score,
+                "cost": cost,
+                "engine": engine,
+                "status": "COMPLETED"
+            }
+            
+            # SAVE TO THE BASE KEY
+            self.redis_client.set(f"audit:{request_id}", json.dumps(audit_entry))
             self.redis_client.set(f"audit:{request_id}:cost", cost)
 
         # Listen for results from ANY engine
