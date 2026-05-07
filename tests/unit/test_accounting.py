@@ -2,8 +2,8 @@
 
 import importlib
 
-cost_analyzer = importlib.import_module("services.cost-analyzer")
-from cost_analyzer.src.accounting import calculate_cost
+calculate_cost = importlib.import_module("services.cost-analyzer.src.accounting.calculate_cost")
+# from services.cost-analyzer.src.accounting import calculate_cost
 
 def test_cost_multiplier_logic():
     # Simulators should be cheap (e.g., 1.0 multiplier)
