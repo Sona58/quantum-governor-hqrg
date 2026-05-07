@@ -64,8 +64,11 @@ jobs:
           kubectl exec -n hqrg-core deployment/nats-deployment -c nats -- nats str add QUANTUM --server=localhost:4222 --subjects "quantum.*" --storage file --retention limits --max-msgs=-1 --max-bytes=-1 --discard old --defaults || true
 
       - name: Run Integration Tests
+        env:
+            GATEWAY_URL: http://localhost:8080
+            REDIS_HOST: localhost
         run: |
-          pip install pytest requests
+          pip install pytest requests fastapi uvicorn prometheus-client qiskit qiskit-aer nats-py redis
           # We use port-forward to hit the gateway inside the runner
           kubectl port-forward service/gateway-api-service 8080:80 -n hqrg-core &
           sleep 5
