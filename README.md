@@ -10,6 +10,8 @@
 
 ## 🏗️ Architecture Overview
 
+![Architectural Diagram](./images/HQRG_Diagram.png)
+
 The system utilizes and event-based "Saga" pattern managed via **NATS JetStream** and automated via **Terraform**.
 
 * **Governance Gateway (FastAPI):** Implements an `HPC-ROUTER` logic. It automatically offloads complex quantum circuits (multi-feature payloads) to **SLURM** while keeping simpler risk assessments in the local **Risk Engine**.
